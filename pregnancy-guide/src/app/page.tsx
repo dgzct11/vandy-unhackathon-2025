@@ -12,6 +12,7 @@ export default function Home() {
 
   // AI chat integration
   const { messages, input, handleInputChange, handleSubmit, isLoading} = useChat({
+    maxSteps: 5,
     api: '/api/chat',
     body: {
       drugData,

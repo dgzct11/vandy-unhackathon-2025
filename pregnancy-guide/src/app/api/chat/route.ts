@@ -1,20 +1,18 @@
 import { streamText } from 'ai';
 import { NextRequest } from 'next/server';
 import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+import { searchDrugInfo } from '@/app/actions/openfda';
 
 
+
+export const maxDuration = 30;
 export async function POST(req: NextRequest) {
   const { messages, drugData } = await req.json();
 
-  // Add context about PLLR and the drug data to the system message
-  const contextualizedMessages = [
-    {
-      role: 'system',
-      content: `You are a helpful AI assistant specializing in pregnancy-related drug information, focusing on the FDA's Pregnancy and Lactation Labeling Rule (PLLR). 
+  const systemMessage = `You are a helpful AI assistant specializing in pregnancy-related drug information, focusing on the FDA's Pregnancy and Lactation Labeling Rule (PLLR). 
 
 Your goal is to help explain pregnancy information about medications in a clear, accessible way. 
-
-Context about drug information from OpenFDA: ${JSON.stringify(drugData)}
 
 Important guidelines:
 - Explain PLLR categories and what they mean in simple terms
@@ -22,18 +20,24 @@ Important guidelines:
 - Be clear about limitations in the data
 - Encourage users to consult healthcare providers for personalized advice
 - Do not give medical advice, only information about the drug's pregnancy category and known effects
-- Be compassionate and understanding about pregnancy concerns`
-    },
-    ...messages,
-  ];
-
- 
-console.log(contextualizedMessages[0].content);
-  // Create a streaming response using streamText
+- Be compassionate and understanding about pregnancy concerns`;
+console.log('messages', messages);
   const result = streamText({
     model: openai('gpt-4-turbo'),
-    system: 'You are a helpful assistant.',
-    messages: contextualizedMessages,
+    system: systemMessage,
+    messages: messages,
+    tools: {
+      // server-side tool with execute function:
+      getDrugInformation: {
+        description: 'Query the drug or food information from the OpenFDA API',
+        parameters: z.object({ itemName: z.string().describe('The name of the drug or food item to search for') }),
+        execute: async ({itemName}: { itemName: string }) => {
+          console.log('itemName', itemName);
+          const response = await searchDrugInfo(itemName);
+          return JSON.stringify(response.results);
+        },
+      },
+    },
   });
 
 
