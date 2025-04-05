@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
+
 import Image from "next/image";
 import ChatInterface from "@/components/ChatInterface";
 
 export default function Home() {
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [isFetchingFDA, setIsFetchingFDA] = useState(false);
-
+  
   // AI chat integration with simpler approach
   const chatHelpers = useChat({
     maxSteps: 5,
@@ -39,9 +38,7 @@ export default function Home() {
       <main className="flex-grow container mx-auto p-4 max-w-4xl flex items-center justify-center py-8">
         <ChatInterface 
           chatHelpers={chatHelpers}
-          selectedImage={selectedImage}
-          setSelectedImage={setSelectedImage}
-          isFetchingFDA={false} // We're not using this anymore
+          
         />
       </main>
 
