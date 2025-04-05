@@ -52,7 +52,7 @@ export default function Home() {
       <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-violet-700 dark:text-violet-400">
-            Pregnancy Medication Guide
+            MamaShield 
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Powered by AI & OpenFDA
