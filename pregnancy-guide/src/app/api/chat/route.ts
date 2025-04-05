@@ -28,7 +28,7 @@ Important guidelines:
   ];
 
  
-
+console.log(contextualizedMessages[0].content);
   // Create a streaming response using streamText
   const result = streamText({
     model: openai('gpt-4-turbo'),

@@ -26,14 +26,22 @@ export async function GET(request: NextRequest) {
 
     // Extract pregnancy and lactation information
     const results = response.data.results.map((result: any) => {
-      return {
+      // console log the keys of the result
+      console.log(result);
+      console.log(Object.keys(result));
+      console.log(Object.keys(result.openfda));
+      let basicInfo =  {
         brandName: result.openfda?.brand_name?.[0] || 'Unknown',
         genericName: result.openfda?.generic_name?.[0] || 'Unknown',
+        warnings: result.warnings?.[0] || 'No specific warnings available',
         pregnancyInfo: result.pregnancy?.[0] || 'No specific pregnancy information available',
         lactationInfo: result.lactation?.[0] || 'No specific lactation information available',
         pregnancyCategory: result.pregnancy_category?.[0] || 'Not categorized',
-        warnings: result.warnings?.[0] || 'No specific warnings available',
+        nursingMothers: result.nursing_mothers?.[0] || 'No specific nursing mothers information available',
+        pregnancy_or_breast_feeding: result.pregnancy_or_breast_feeding?.[0] || 'Not categorized',
+        laborOrDelivery: result.labor_or_delivery?.[0] || 'Not categorized',
       };
+      return basicInfo;
     });
 
     return NextResponse.json({ results });

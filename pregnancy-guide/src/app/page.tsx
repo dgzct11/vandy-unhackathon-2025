@@ -11,7 +11,7 @@ export default function Home() {
   const [error, setError] = useState('');
 
   // AI chat integration
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading} = useChat({
     api: '/api/chat',
     body: {
       drugData,
