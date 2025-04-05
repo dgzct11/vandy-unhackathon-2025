@@ -23,7 +23,7 @@ Important guidelines:
 - Be compassionate and understanding about pregnancy concerns`;
 console.log('messages', messages);
   const result = streamText({
-    model: openai('gpt-4-turbo'),
+    model: openai('gpt-4o-mini'),
     system: systemMessage,
     messages: messages,
     tools: {
