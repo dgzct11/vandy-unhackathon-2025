@@ -15,15 +15,17 @@ export async function POST(req: NextRequest) {
 Your goal is to help explain pregnancy information about medications in a clear, accessible way. 
 
 Important guidelines:
-- Explain PLLR categories and what they mean in simple terms
+- Keep it brief and simple, intended for pregnant women with limited medical knowledge
+- present the most important information first
 - Always prioritize official FDA information
 - Be clear about limitations in the data
 - Encourage users to consult healthcare providers for personalized advice
 - Do not give medical advice, only information about the drug's pregnancy category and known effects
 - Be compassionate and understanding about pregnancy concerns`;
+
 console.log('messages', messages);
   const result = streamText({
-    model: openai('gpt-4o-mini'),
+    model: openai('gpt-4o'),
     system: systemMessage,
     messages: messages,
     tools: {

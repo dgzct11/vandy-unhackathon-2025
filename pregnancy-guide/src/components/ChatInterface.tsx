@@ -1,7 +1,7 @@
 import { UseChatHelpers } from "@ai-sdk/react";
 import { formatMessage } from "@/lib/util-functions";
-import { useState, FormEvent, ChangeEvent } from "react";
-
+import { useState, FormEvent, ChangeEvent, useRef, useEffect } from "react";
+import Image from "next/image";
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -89,19 +89,71 @@ export default function ChatInterface({
     isLoading,
   } = chatHelpers;
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedImage(e.target.files[0]);
+  const [files, setFiles] = useState<FileList | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const DEFAULT_IMAGE_MESSAGE =
+    "Are there any issues with drugs or foods in this image and pregnancies?";
+
+  const [shouldSubmit, setShouldSubmit] = useState(false);
+
+  useEffect(() => {
+    if (shouldSubmit) {
+      handleChatSubmit(undefined, { experimental_attachments: files });
+      setShouldSubmit(false);
+      setFiles(undefined);
+    }
+  }, [shouldSubmit]);
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setFiles(event.target.files);
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (selectedImage) {
-      // TODO: Handle image upload
-      setSelectedImage(null);
+  const handleRemoveFile = (indexToRemove: number) => {
+    if (!files) return;
+
+    // Create a new DataTransfer object to manipulate the FileList
+    const dt = new DataTransfer();
+
+    // Add all files except the one to remove
+    Array.from(files).forEach((file, index) => {
+      if (index !== indexToRemove) {
+        dt.items.add(file);
+      }
+    });
+
+    // Update the files state
+    setFiles(dt.files.length > 0 ? dt.files : undefined);
+
+    // Update the file input value
+    if (fileInputRef.current) {
+      fileInputRef.current.files = dt.files.length > 0 ? dt.files : null;
     }
-    handleChatSubmit(e);
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    // If there's an image but no text input, set a default message
+    if (files && files.length > 0 && !input.trim()) {
+      // Prevent default form submission
+      event.preventDefault();
+
+      setInput(DEFAULT_IMAGE_MESSAGE);
+      setShouldSubmit(true);
+
+      return;
+    }
+
+    // Normal submission with text input
+    handleChatSubmit(event, {
+      experimental_attachments: files,
+    });
+
+    setFiles(undefined);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   // Check if we should show the loading message
@@ -130,27 +182,81 @@ export default function ChatInterface({
       </h2>
 
       <div className="flex-1 overflow-y-auto mb-4 space-y-4 flex flex-col">
-        {messages.map((message) => (
+        {messages.map((message: any, index: number) => (
           <div
             key={message.id}
             className={`p-3 rounded-lg max-w-[80%] ${
               message.role === "assistant"
                 ? "bg-violet-50 dark:bg-violet-900/20 text-gray-800 dark:text-gray-200 self-start"
                 : "bg-blue-50 dark:bg-blue-900/20 text-gray-800 dark:text-gray-200 self-end"
+            } ${
+              index === messages.length - 1 &&
+              shouldShowLoadingMessage &&
+              message.role === "assistant"
+                ? "hidden"
+                : ""
             }`}
           >
             {formatMessage(message.content)}
+            <div>
+              {message?.experimental_attachments
+                ?.filter((attachment: any) =>
+                  attachment?.contentType?.startsWith("image/")
+                )
+                .map((attachment: any, index: number) => (
+                  <Image
+                    key={`${message.id}-${index}`}
+                    src={attachment.url}
+                    width={500}
+                    height={500}
+                    alt={attachment.name ?? `attachment-${index}`}
+                  />
+                ))}
+            </div>
           </div>
         ))}
 
         {/* Show loading state */}
-        {shouldShowLoadingMessage &&
-          (isDrugQuery || isFetchingFDA ? (
-            <FDALoadingMessage />
-          ) : (
-            <LoadingMessage />
-          ))}
+        {shouldShowLoadingMessage && <LoadingMessage />}
       </div>
+
+      {/* Image Preview with Remove Buttons */}
+      {files && files.length > 0 && (
+        <div className="mb-3 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded">
+          <div className="text-sm mb-2 text-gray-700 dark:text-gray-300">
+            {files.length} image{files.length > 1 ? "s" : ""} selected
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Array.from(files).map((file, index) => (
+              <div key={index} className="relative">
+                <div className="w-16 h-16 border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Preview ${index}`}
+                    className="w-full h-full object-cover"
+                    onLoad={(e) =>
+                      URL.revokeObjectURL((e.target as HTMLImageElement).src)
+                    }
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile(index)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                  aria-label="Remove image"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          {!input.trim() && (
+            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
+              Will send with default message: "{DEFAULT_IMAGE_MESSAGE}"
+            </div>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <input
@@ -198,6 +304,7 @@ export default function ChatInterface({
             accept="image/*"
             onChange={handleImageChange}
             className="hidden"
+            ref={fileInputRef}
           />
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -216,7 +323,7 @@ export default function ChatInterface({
         </label>
         <button
           type="submit"
-          disabled={isLoading || (!input.trim() && !selectedImage)}
+          disabled={isLoading || (!input.trim() && !files)}
           className="py-2 px-4 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           title="Send your message to the AI assistant"
         >
