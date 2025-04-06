@@ -1,4 +1,4 @@
-import { UseTypedChatHelpers } from "@ai-sdk/react";
+import { UseChatHelpers } from "@ai-sdk/react";
 import { formatMessage } from "@/lib/util-functions";
 import { useState, FormEvent, ChangeEvent } from "react";
 
@@ -9,33 +9,35 @@ interface Message {
 }
 
 interface ChatInterfaceProps {
-  chatHelpers: UseTypedChatHelpers;
+  chatHelpers: UseChatHelpers;
   selectedImage: File | null;
   setSelectedImage: (image: File | null) => void;
   isFetchingFDA: boolean;
+  isRecording: boolean;
+  startRecording: () => void;
 }
 
 // Loading message component
 const LoadingMessage = () => (
   <div className="p-3 rounded-lg max-w-[80%] bg-violet-50 dark:bg-violet-900/20 text-gray-800 dark:text-gray-200 self-start animate-pulse">
     <div className="flex items-center gap-2">
-      <svg 
-        className="animate-spin h-5 w-5 text-violet-600 dark:text-violet-400" 
-        xmlns="http://www.w3.org/2000/svg" 
-        fill="none" 
+      <svg
+        className="animate-spin h-5 w-5 text-violet-600 dark:text-violet-400"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
         viewBox="0 0 24 24"
       >
-        <circle 
-          className="opacity-25" 
-          cx="12" 
-          cy="12" 
-          r="10" 
-          stroke="currentColor" 
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
           strokeWidth="4"
         />
-        <path 
-          className="opacity-75" 
-          fill="currentColor" 
+        <path
+          className="opacity-75"
+          fill="currentColor"
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         />
       </svg>
@@ -47,23 +49,23 @@ const LoadingMessage = () => (
 // FDA loading message component
 const FDALoadingMessage = () => (
   <div className="p-3 rounded-lg max-w-[80%] bg-green-50 dark:bg-green-900/20 text-gray-800 dark:text-gray-200 self-start flex items-center gap-2">
-    <svg 
-      className="animate-spin h-5 w-5 text-green-600 dark:text-green-400" 
-      xmlns="http://www.w3.org/2000/svg" 
-      fill="none" 
+    <svg
+      className="animate-spin h-5 w-5 text-green-600 dark:text-green-400"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
       viewBox="0 0 24 24"
     >
-      <circle 
-        className="opacity-25" 
-        cx="12" 
-        cy="12" 
-        r="10" 
-        stroke="currentColor" 
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
         strokeWidth="4"
       />
-      <path 
-        className="opacity-75" 
-        fill="currentColor" 
+      <path
+        className="opacity-75"
+        fill="currentColor"
         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
       />
     </svg>
@@ -75,9 +77,17 @@ export default function ChatInterface({
   chatHelpers,
   selectedImage,
   setSelectedImage,
-  isFetchingFDA
+  isFetchingFDA,
+  isRecording,
+  startRecording,
 }: ChatInterfaceProps) {
-  const { messages, input, handleInputChange, handleSubmit: handleChatSubmit, isLoading } = chatHelpers;
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit: handleChatSubmit,
+    isLoading,
+  } = chatHelpers;
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -95,17 +105,21 @@ export default function ChatInterface({
   };
 
   // Check if we should show the loading message
-  const shouldShowLoadingMessage = isLoading && messages.length > 0 && 
+  const shouldShowLoadingMessage =
+    isLoading &&
+    messages.length > 0 &&
     messages[messages.length - 1].role === "user";
 
   // Check message content for drug-related terms
-  const lastUserMessage = messages.length > 0 && messages[messages.length - 1].role === "user" 
-    ? messages[messages.length - 1].content.toLowerCase() 
-    : "";
-  
-  const isDrugQuery = lastUserMessage.includes("drug") || 
-    lastUserMessage.includes("medication") || 
-    lastUserMessage.includes("medicine") || 
+  const lastUserMessage =
+    messages.length > 0 && messages[messages.length - 1].role === "user"
+      ? messages[messages.length - 1].content.toLowerCase()
+      : "";
+
+  const isDrugQuery =
+    lastUserMessage.includes("drug") ||
+    lastUserMessage.includes("medication") ||
+    lastUserMessage.includes("medicine") ||
     lastUserMessage.includes("pill") ||
     lastUserMessage.includes("fda");
 
@@ -128,11 +142,14 @@ export default function ChatInterface({
             {formatMessage(message.content)}
           </div>
         ))}
-        
+
         {/* Show loading state */}
-        {shouldShowLoadingMessage && (
-          isDrugQuery || isFetchingFDA ? <FDALoadingMessage /> : <LoadingMessage />
-        )}
+        {shouldShowLoadingMessage &&
+          (isDrugQuery || isFetchingFDA ? (
+            <FDALoadingMessage />
+          ) : (
+            <LoadingMessage />
+          ))}
       </div>
 
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
@@ -143,6 +160,35 @@ export default function ChatInterface({
           placeholder="Ask about pregnancy and medications..."
           className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-violet-500 dark:bg-gray-700 dark:text-white"
         />
+        <button
+          type="button"
+          onClick={startRecording}
+          className={`p-2 rounded-md transition-colors ${
+            isRecording
+              ? "bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400"
+              : "bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-600 dark:text-violet-400"
+          }`}
+          title={
+            isRecording
+              ? "Recording in progress..."
+              : "Click to start voice input"
+          }
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+            />
+          </svg>
+        </button>
         <label
           className="cursor-pointer p-2 bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 rounded-md transition-colors"
           title="Upload an image to share with the AI assistant"
@@ -179,4 +225,4 @@ export default function ChatInterface({
       </form>
     </div>
   );
-} 
+}
