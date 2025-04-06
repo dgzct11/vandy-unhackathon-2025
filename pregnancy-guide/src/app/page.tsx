@@ -20,7 +20,7 @@ export default function Home() {
         id: "welcome",
         role: "assistant",
         content:
-          "Hello! I can help you understand how medications might affect pregnancy and breastfeeding. Feel free to ask any questions!",
+          "Hello! I can help you understand how medications might affect pregnancy and breastfeeding. Feel free to ask any questions or upload an image of the medication!",
       },
     ],
   });
