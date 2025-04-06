@@ -5,18 +5,43 @@ interface SafetyIndicatorProps {
 }
 
 const SafetyIndicator: React.FC<SafetyIndicatorProps> = ({ safetyLevel }) => {
-  const getSafetyColor = () => {
+  const getStyles = () => {
     switch (safetyLevel) {
       case 'safe':
-        return 'bg-[#4ADE80]'; // Green
+        return {
+          bg: 'bg-green-50',
+          border: 'border-green-200',
+          text: 'text-green-800',
+          dot: 'bg-[#4ADE80]'
+        };
       case 'moderate':
-        return 'bg-[#FBBF24]'; // Yellow
+        return {
+          bg: 'bg-yellow-50',
+          border: 'border-yellow-200',
+          text: 'text-yellow-800',
+          dot: 'bg-[#FBBF24]'
+        };
       case 'notToSafe':
-        return 'bg-[#FB923C]'; // Orange
+        return {
+          bg: 'bg-orange-50',
+          border: 'border-orange-200',
+          text: 'text-orange-800',
+          dot: 'bg-[#FB923C]'
+        };
       case 'notSafe':
-        return 'bg-[#EF4444]'; // Red
+        return {
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          text: 'text-red-800',
+          dot: 'bg-[#EF4444]'
+        };
       default:
-        return 'bg-gray-400';
+        return {
+          bg: 'bg-gray-50',
+          border: 'border-gray-200',
+          text: 'text-gray-800',
+          dot: 'bg-gray-400'
+        };
     }
   };
 
@@ -35,20 +60,13 @@ const SafetyIndicator: React.FC<SafetyIndicatorProps> = ({ safetyLevel }) => {
     }
   };
 
+  const styles = getStyles();
+
   return (
-    <div className="flex items-center gap-3 p-4 bg-[#F3F4FF] rounded-lg">
-      <div className="flex items-center gap-3">
-        <svg className="w-8 h-8" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 8C22 8 26 10 26 16C26 22 22 32 20 32C18 32 14 22 14 16C14 10 18 8 20 8Z" fill="#818CF8"/>
-          <path d="M20 32V36M16 36H24" stroke="#818CF8" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-        <div className="flex items-center gap-3">
-          <span className="font-medium text-lg text-gray-900">{getSafetyText()}</span>
-          <div className={`w-3 h-3 rounded-full ${getSafetyColor()}`}></div>
-        </div>
-      </div>
-      <div className="text-sm text-gray-500 ml-auto">
-        Optionally: "Copy this to ask doctor."
+    <div className={`flex items-center px-3 py-2 ${styles.bg} border ${styles.border} rounded-lg`}>
+      <div className="flex items-center gap-2">
+        <div className={`w-3 h-3 rounded-full ${styles.dot}`}></div>
+        <span className={`font-large text-lg  ${styles.text}`}>{getSafetyText()}</span>
       </div>
     </div>
   );

@@ -72,21 +72,21 @@ export default function Home() {
               MamaShield
             </h1>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Powered by AI & OpenFDA
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 pr-0 sm:pr-2 text-right">
+            Powered by OpenAI & OpenFDA
           </p>
         </div>
       </header>
 
-      <main className="flex-grow container mx-auto p-4 max-w-4xl flex items-center justify-center py-8">
+      <main className="flex-grow container mx-auto p-0 sm:p-4 max-w-full sm:max-w-4xl flex items-center justify-center py-0 sm:py-8">
         <ChatInterface
           chatHelpers={chatHelpers}
           
         />
       </main>
 
-      <footer className="mt-auto border-t border-gray-200 dark:border-gray-700 py-6 text-center text-sm text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4">
+      <footer className="mt-auto border-t border-gray-200 dark:border-gray-700 py-3 sm:py-6 text-center text-sm text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        <div className="container mx-auto px-2 sm:px-4">
           <p>
             This tool provides general information and is not a substitute for
             professional medical advice. Always consult with your healthcare

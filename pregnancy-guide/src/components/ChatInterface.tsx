@@ -173,25 +173,25 @@ export default function ChatInterface({
   return (
     <div className="bg-white h-screen w-full flex flex-col overflow-hidden rounded-l">
       
-      <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-4 flex flex-col overflow-hidden ">
-        <div className="bg-violet-50 p-4 rounded-lg mb-4 shadow-sm">
-          <div className="flex items-center gap-3 mb-4 shrink-0">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M24 8C26 8 32 12 32 20C32 28 26 40 24 40C22 40 16 28 16 20C16 12 22 8 24 8Z" fill="#818CF8"/>
-              <path d="M24 40V44M20 44H28" stroke="#818CF8" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <h2 className="text-2xl font-semibold text-[#818CF8]">
-              ASK MAMA
-            </h2>
-          </div>
-
-          <p className="text-gray-600 mb-4 shrink-0">
-            Welcome to MAMA SHIELD — your AI-powered guide for safer pregnancy, built for mothers & future mothers!
-          </p>
-        </div>
-
+      <main className="flex-1 w-full max-w-6xl mx-auto px-2 sm:px-6 py-4 flex flex-col overflow-hidden ">
         
         <div className="flex-1 overflow-y-auto min-h-0 mb-4 space-y-4 flex flex-col">
+          <div className="bg-violet-50 p-4 rounded-lg mb-4 shadow-sm shrink-0">
+            <div className="flex items-center gap-3 mb-4">
+              <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 8C26 8 32 12 32 20C32 28 26 40 24 40C22 40 16 28 16 20C16 12 22 8 24 8Z" fill="#818CF8"/>
+                <path d="M24 40V44M20 44H28" stroke="#818CF8" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <h2 className="text-2xl font-semibold text-[#818CF8]">
+                ASK MAMA
+              </h2>
+            </div>
+
+            <p className="text-gray-600">
+              Welcome to MAMA SHIELD — your AI-powered guide for safer pregnancy, built for mothers & future mothers!
+            </p>
+          </div>
+
           {messages.length === 0 && (
             <div className="p-4 rounded-lg bg-[#F3F4FF] text-gray-600 self-start max-w-[85%]">
               Hello! I can help you understand how medications might affect pregnancy and breastfeeding. Feel free to ask any questions!
