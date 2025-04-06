@@ -59,6 +59,7 @@ export default function ChatInterface({
     if (shouldSubmit) {
       handleChatSubmit(undefined, {experimental_attachments: files});
       setShouldSubmit(false);
+      setFiles(undefined);
     }
   }, [shouldSubmit]);
 
@@ -129,14 +130,14 @@ export default function ChatInterface({
       </h2>
 
       <div className="flex-1 overflow-y-auto mb-4 space-y-4 flex flex-col">
-      {messages.map((message: any) => (
+      {messages.map((message: any, index: number) => (
   <div
     key={message.id}
     className={`p-3 rounded-lg max-w-[80%] ${
       message.role === "assistant"
         ? "bg-violet-50 dark:bg-violet-900/20 text-gray-800 dark:text-gray-200 self-start"
         : "bg-blue-50 dark:bg-blue-900/20 text-gray-800 dark:text-gray-200 self-end"
-    }`}
+    } ${(index === messages.length - 1 && shouldShowLoadingMessage && message.role === "assistant") ? "hidden" : ""}`}
   >
     {formatMessage(message.content)}
     <div>
