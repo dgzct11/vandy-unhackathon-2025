@@ -40,6 +40,23 @@ const removeSafetyTag = (content: string): string => {
   return content.replace(/^\[(SAFE|MODERATE|NOT_TOO_SAFE|NOT_SAFE)\](\s*:?\s*)/i, '').trim();
 };
 
+// Add this new component before the ChatInterface component
+const SafetyAlternatives = ({ alternatives }: { alternatives: string[] }) => (
+  <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+    <div className="font-medium text-green-600 mb-2">Safer Alternatives:</div>
+    <ul className="list-disc list-inside space-y-2">
+      {alternatives.map((alternative, index) => {
+        const [name, description] = alternative.split(':').map(part => part.trim());
+        return (
+          <li key={index} className="text-gray-600">
+            <span className="font-semibold">{name}:</span> {description}
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+);
+
 export default function ChatInterface({
   chatHelpers,
 }: ChatInterfaceProps) {
@@ -59,7 +76,7 @@ export default function ChatInterface({
       return alternativesMatch[1]
         .split('\n')
         .filter(line => line.trim().startsWith('-'))
-        .map(line => line.trim().substring(2));
+        .map(line => line.trim().substring(2).replace(/\*\*/g, ''));
     }
     return null;
   };
@@ -219,6 +236,10 @@ export default function ChatInterface({
                     ? formatMessage(removeSafetyTag(removeAlternativesSection(message.content)))
                     : formatMessage(message.content)
                   }
+                  {message.role === "assistant" && alternatives && messageSafetyLevels[message.id] && 
+                   (messageSafetyLevels[message.id] === 'moderate' || messageSafetyLevels[message.id] === 'notSafe') && (
+                    <SafetyAlternatives alternatives={alternatives} />
+                  )}
                   <div>
                     {message?.experimental_attachments
                       ?.filter((attachment: any) =>
