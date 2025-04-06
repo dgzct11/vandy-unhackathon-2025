@@ -5,11 +5,15 @@ import { useChat } from "@ai-sdk/react";
 
 import Image from "next/image";
 import ChatInterface from "@/components/ChatInterface";
+import EmergencyButton from "@/components/EmergencyButton";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
+
+  // Get emergency contact from environment variable
+  const emergencyContact = process.env.NEXT_PUBLIC_EMERGENCY_CONTACT || "";
 
   // AI chat integration with simpler approach
   const chatHelpers = useChat({
@@ -72,7 +76,10 @@ export default function Home() {
       <main className="flex-grow container mx-auto p-4 max-w-4xl flex items-center justify-center py-8">
         <ChatInterface
           chatHelpers={chatHelpers}
-          
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          isRecording={isRecording}
+          startRecording={startRecording}
         />
       </main>
 
@@ -85,6 +92,8 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      <EmergencyButton emergencyContact={emergencyContact} />
     </div>
   );
 }
