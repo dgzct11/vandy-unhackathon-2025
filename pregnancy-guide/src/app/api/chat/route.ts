@@ -43,7 +43,7 @@ SAFER ALTERNATIVES:
 Important guidelines:
 - Always start your response with the appropriate safety classification in square brackets
 - Keep it brief and simple, intended for pregnant women with limited medical knowledge
-- Present the most important information first, bolded and in bullet points.
+- Present the most important information first. Try to use bullet points with bolded key info such as risks or usage information. 
 - Always prioritize official FDA information
 - Be clear about limitations in the data
 - Encourage users to consult healthcare providers for personalized advice
