@@ -1,46 +1,56 @@
-# Pregnancy Medication Guide
+# Pregnancy Guide AI Assistant
 
-A Next.js application that uses AI to help women navigate the FDA's Pregnancy and Lactation Labeling Rule (PLLR) for pregnancy information about drugs and food.
+This is an AI-powered chat application that provides information about medication and food safety during pregnancy.
 
-## Features
+## Setup Instructions
 
-- **OpenFDA Integration**: Fetch real medication data from the FDA's database
-- **AI-Powered Assistant**: Uses LLM to interpret and explain medication information in simple terms
-- **User-Friendly Interface**: Clean design focused on providing clear information about medications during pregnancy
-- **Real-time Chat**: Ask questions about specific medications and get AI-generated responses
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- OpenAI API key
-
-### Installation
-
-1. Clone the repository
+1. First, clone this repository
 2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env.local` file in the root directory with your OpenAI API key:
-   ```
-   OPENAI_API_KEY=your-openai-api-key
-   ```
+```bash
+npm install
+```
 
-### Running the Application
+3. Set up your environment variables:
+   - Create a `.env.local` file in the root directory
+   - Add your OpenAI API key and model configuration:
+   ```
+   OPENAI_API_KEY=your_api_key_here
+   OPENAI_API_MODEL=gpt-4
+   ```
+   
+   To get your OpenAI API key:
+   1. Go to https://platform.openai.com/api-keys
+   2. Sign in or create an account
+   3. Create a new API key
+   4. Copy the key and paste it in your `.env.local` file
 
+   ⚠️ IMPORTANT: 
+   - Never commit your `.env.local` file to version control
+   - Keep your API key secret and don't share it publicly
+   - If you accidentally expose your API key, rotate it immediately on OpenAI's website
+
+4. Run the development server:
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## How It Works
+## Features
 
-1. **Search for Medications**: Enter the name of a drug to search for information
-2. **View FDA Information**: See official FDA data about the drug's pregnancy category and relevant warnings
-3. **Ask the AI**: The AI assistant can interpret the medical information and answer specific questions
+- Chat interface for pregnancy-related questions
+- Safety indicator for medications and foods
+- Integration with FDA database
+- Real-time responses with GPT-4
+
+## Usage
+
+Simply type your question about pregnancy safety in the chat interface. For example:
+- "Can I drink coffee while pregnant?"
+- "Is it safe to take acetaminophen during pregnancy?"
+- "What foods should I avoid while pregnant?"
+
+The AI will respond with safety information and the safety indicator will show the risk level.
 
 ## Important Notes
 

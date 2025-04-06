@@ -2,6 +2,8 @@ import { UseChatHelpers } from "@ai-sdk/react";
 import { formatMessage } from "@/lib/util-functions";
 import { useState, FormEvent, ChangeEvent, useRef, useEffect } from "react";
 import Image from "next/image";
+import SafetyIndicator from "./SafetyIndicator";
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -10,95 +12,94 @@ interface Message {
 
 interface ChatInterfaceProps {
   chatHelpers: UseChatHelpers;
-  selectedImage: File | null;
-  setSelectedImage: (image: File | null) => void;
-  isFetchingFDA: boolean;
-  isRecording: boolean;
-  startRecording: () => void;
 }
 
 // Loading message component
 const LoadingMessage = () => (
-  <div className="p-3 rounded-lg max-w-[80%] bg-violet-50 dark:bg-violet-900/20 text-gray-800 dark:text-gray-200 self-start animate-pulse">
-    <div className="flex items-center gap-2">
-      <svg
-        className="animate-spin h-5 w-5 text-violet-600 dark:text-violet-400"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-        />
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        />
-      </svg>
-      <span>Thinking...</span>
-    </div>
+  <div className="p-4 rounded-lg bg-[#F3F4FF] text-gray-600 self-start max-w-[85%] flex items-center gap-3">
+    <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#818CF8] border-t-transparent"></div>
+    <span>Analyzing...</span>
   </div>
 );
 
-// FDA loading message component
-const FDALoadingMessage = () => (
-  <div className="p-3 rounded-lg max-w-[80%] bg-green-50 dark:bg-green-900/20 text-gray-800 dark:text-gray-200 self-start flex items-center gap-2">
-    <svg
-      className="animate-spin h-5 w-5 text-green-600 dark:text-green-400"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
-    </svg>
-    <span>Asking the FDA...</span>
-  </div>
-);
+// Add this function at the top level, before the ChatInterface component
+const removeAlternativesSection = (content: string): string => {
+  // Remove the SAFER ALTERNATIVES section and any content after it
+  const parts = content.split('SAFER ALTERNATIVES:');
+  // Return the first part (everything before SAFER ALTERNATIVES)
+  // Trim to remove any trailing whitespace or newlines
+  return parts[0].trim();
+};
 
 export default function ChatInterface({
   chatHelpers,
-  selectedImage,
-  setSelectedImage,
-  isFetchingFDA,
-  isRecording,
-  startRecording,
 }: ChatInterfaceProps) {
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit: handleChatSubmit,
-    isLoading,
-  } = chatHelpers;
-
+  const { messages, setMessages, input, handleInputChange, handleSubmit: handleChatSubmit, isLoading, setInput } = chatHelpers;
   const [files, setFiles] = useState<FileList | undefined>(undefined);
+  const [safetyLevel, setSafetyLevel] = useState<'safe' | 'moderate' | 'notToSafe' | 'notSafe' | null>(null);
+  const [alternatives, setAlternatives] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const DEFAULT_IMAGE_MESSAGE =
-    "Are there any issues with drugs or foods in this image and pregnancies?";
+  const DEFAULT_IMAGE_MESSAGE = "What is this medication and is it safe during pregnancy?";
 
   const [shouldSubmit, setShouldSubmit] = useState(false);
 
+  // Function to extract alternatives from AI response
+  const extractAlternatives = (content: string): string[] | null => {
+    const alternativesMatch = content.match(/SAFER ALTERNATIVES:\n((?:- [^\n]+\n?)+)/);
+    if (alternativesMatch && alternativesMatch[1]) {
+      return alternativesMatch[1]
+        .split('\n')
+        .filter(line => line.trim().startsWith('-'))
+        .map(line => line.trim().substring(2));
+    }
+    return null;
+  };
+
+  // Function to determine safety level from AI response
+  const determineSafetyLevel = (content: string) => {
+    const safetyMatch = content.match(/^\[(SAFE|MODERATE|NOT_TOO_SAFE|NOT_SAFE)\]/i);
+    
+    if (safetyMatch) {
+      const level = safetyMatch[1].toUpperCase();
+      switch (level) {
+        case 'SAFE':
+          return 'safe';
+        case 'MODERATE':
+          return 'moderate';
+        case 'NOT_TOO_SAFE':
+          return 'notToSafe';
+        case 'NOT_SAFE':
+          return 'notSafe';
+        default:
+          return null;
+      }
+    }
+    
+    return null;
+  };
+
+  // Update safety level and alternatives when new assistant message is received
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'assistant') {
+        const level = determineSafetyLevel(lastMessage.content);
+        setSafetyLevel(level);
+        
+        // Only look for alternatives if not safe
+        if (level && level !== 'safe') {
+          const foundAlternatives = extractAlternatives(lastMessage.content);
+          setAlternatives(foundAlternatives);
+        } else {
+          setAlternatives(null);
+        }
+      }
+    }
+  }, [messages]);
+
   useEffect(() => {
     if (shouldSubmit) {
-      handleChatSubmit(undefined, { experimental_attachments: files });
+      handleChatSubmit(undefined, {experimental_attachments: files});
       setShouldSubmit(false);
       setFiles(undefined);
     }
@@ -112,43 +113,26 @@ export default function ChatInterface({
 
   const handleRemoveFile = (indexToRemove: number) => {
     if (!files) return;
-
-    // Create a new DataTransfer object to manipulate the FileList
     const dt = new DataTransfer();
-
-    // Add all files except the one to remove
     Array.from(files).forEach((file, index) => {
       if (index !== indexToRemove) {
         dt.items.add(file);
       }
     });
-
-    // Update the files state
     setFiles(dt.files.length > 0 ? dt.files : undefined);
-
-    // Update the file input value
     if (fileInputRef.current) {
       fileInputRef.current.files = dt.files.length > 0 ? dt.files : null;
     }
   };
 
   const handleSubmit = async (event: FormEvent) => {
-    // If there's an image but no text input, set a default message
+    event.preventDefault();
     if (files && files.length > 0 && !input.trim()) {
-      // Prevent default form submission
-      event.preventDefault();
-
-      // Use handleInputChange to set the input value
-      const inputEvent = {
-        target: { value: DEFAULT_IMAGE_MESSAGE },
-      } as ChangeEvent<HTMLInputElement>;
-      handleInputChange(inputEvent);
+      setInput(DEFAULT_IMAGE_MESSAGE);
       setShouldSubmit(true);
-
       return;
     }
-
-    // Normal submission with text input
+    
     handleChatSubmit(event, {
       experimental_attachments: files,
     });
@@ -156,184 +140,165 @@ export default function ChatInterface({
     setFiles(undefined);
 
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
-  // Check if we should show the loading message
-  const shouldShowLoadingMessage =
-    isLoading &&
-    messages.length > 0 &&
-    messages[messages.length - 1].role === "user";
-
-  // Check message content for drug-related terms
-  const lastUserMessage =
-    messages.length > 0 && messages[messages.length - 1].role === "user"
-      ? messages[messages.length - 1].content.toLowerCase()
-      : "";
-
-  const isDrugQuery =
-    lastUserMessage.includes("drug") ||
-    lastUserMessage.includes("medication") ||
-    lastUserMessage.includes("medicine") ||
-    lastUserMessage.includes("pill") ||
-    lastUserMessage.includes("fda");
+  const shouldShowLoadingMessage = isLoading && messages.length > 0 && 
+    (messages[messages.length - 1].role === "user" || messages[messages.length - 1].content === "");
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 flex flex-col w-full h-[calc(100vh-180px)] max-h-[800px]">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-        AI Pregnancy Assistant
-      </h2>
+    <div className="bg-white h-screen w-full flex flex-col overflow-hidden">
+      <header className="w-full px-6 py-2 flex justify-between items-center border-b shrink-0">
+        <span className="text-[#818CF8] text-lg">MamaShield</span>
+        <span className="text-gray-500 text-sm">Powered by AI & OpenFDA</span>
+      </header>
 
-      <div className="flex-1 overflow-y-auto mb-4 space-y-4 flex flex-col">
-        {messages.map((message: any, index: number) => (
-          <div
-            key={message.id}
-            className={`p-3 rounded-lg max-w-[80%] ${
-              message.role === "assistant"
-                ? "bg-violet-50 dark:bg-violet-900/20 text-gray-800 dark:text-gray-200 self-start"
-                : "bg-blue-50 dark:bg-blue-900/20 text-gray-800 dark:text-gray-200 self-end"
-            } ${
-              index === messages.length - 1 &&
-              shouldShowLoadingMessage &&
-              message.role === "assistant"
-                ? "hidden"
-                : ""
-            }`}
-          >
-            {formatMessage(message.content)}
-            <div>
-              {message?.experimental_attachments
-                ?.filter((attachment: any) =>
-                  attachment?.contentType?.startsWith("image/")
-                )
-                .map((attachment: any, index: number) => (
-                  <Image
-                    key={`${message.id}-${index}`}
-                    src={attachment.url}
-                    width={500}
-                    height={500}
-                    alt={attachment.name ?? `attachment-${index}`}
-                  />
-                ))}
-            </div>
-          </div>
-        ))}
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-4 flex flex-col overflow-hidden">
+        <div className="flex items-center gap-3 mb-4 shrink-0">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 8C26 8 32 12 32 20C32 28 26 40 24 40C22 40 16 28 16 20C16 12 22 8 24 8Z" fill="#818CF8"/>
+            <path d="M24 40V44M20 44H28" stroke="#818CF8" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <h2 className="text-2xl font-semibold text-[#818CF8]">
+            MAMA SHIELD
+          </h2>
+        </div>
 
-        {/* Show loading state */}
-        {shouldShowLoadingMessage && <LoadingMessage />}
-      </div>
+        <p className="text-gray-600 mb-4 shrink-0">
+          Welcome to MAMA SHIELD — your AI-powered guide for safer pregnancy, built for mothers & future mothers!
+        </p>
 
-      {/* Image Preview with Remove Buttons */}
-      {files && files.length > 0 && (
-        <div className="mb-3 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded">
-          <div className="text-sm mb-2 text-gray-700 dark:text-gray-300">
-            {files.length} image{files.length > 1 ? "s" : ""} selected
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {Array.from(files).map((file, index) => (
-              <div key={index} className="relative">
-                <div className="w-16 h-16 border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={`Preview ${index}`}
-                    className="w-full h-full object-cover"
-                    onLoad={(e) =>
-                      URL.revokeObjectURL((e.target as HTMLImageElement).src)
-                    }
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                  aria-label="Remove image"
-                >
-                  ×
-                </button>
+        {safetyLevel && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
+          <div className="space-y-4 shrink-0">
+            <SafetyIndicator safetyLevel={safetyLevel} />
+            {alternatives && alternatives.length > 0 && (
+              <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                <h3 className="font-medium text-green-800 mb-2">Safer Alternatives:</h3>
+                <ul className="space-y-2">
+                  {alternatives.map((alt, index) => (
+                    <li key={index} className="text-green-700 flex items-start">
+                      <svg className="h-5 w-5 mr-2 text-green-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {alt}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ))}
+            )}
           </div>
-          {!input.trim() && (
-            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">
-              Will send with default message: "{DEFAULT_IMAGE_MESSAGE}"
+        )}
+
+        <div className="flex-1 overflow-y-auto min-h-0 mb-4 space-y-4 flex flex-col">
+          {messages.length === 0 && (
+            <div className="p-4 rounded-lg bg-[#F3F4FF] text-gray-600 self-start max-w-[85%]">
+              Hello! I can help you understand how medications might affect pregnancy and breastfeeding. Feel free to ask any questions!
             </div>
           )}
+          {messages.map((message: any, index: number) => (
+            <div
+              key={message.id}
+              className={`p-4 rounded-lg max-w-[85%] ${
+                message.role === "assistant"
+                  ? "bg-[#F3F4FF] text-gray-600 self-start"
+                  : "bg-[#818CF8] text-white self-end"
+              } ${(index === messages.length - 1 && shouldShowLoadingMessage && message.role === "assistant") ? "hidden" : ""}`}
+            >
+              {message.role === "assistant" 
+                ? formatMessage(removeAlternativesSection(message.content))
+                : formatMessage(message.content)
+              }
+              <div>
+                {message?.experimental_attachments
+                  ?.filter((attachment: any) =>
+                    attachment?.contentType?.startsWith('image/')
+                  )
+                  .map((attachment: any, index: number) => (
+                    <Image
+                      key={`${message.id}-${index}`}
+                      src={attachment.url}
+                      width={500}
+                      height={500}
+                      alt={attachment.name ?? `attachment-${index}`}
+                      className="rounded-lg mt-2"
+                    />
+                  ))}
+              </div>
+            </div>
+          ))}
+          
+          {shouldShowLoadingMessage && <LoadingMessage />}
         </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="flex items-center gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={handleInputChange}
-          placeholder="Ask about pregnancy and medications..."
-          className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-violet-500 dark:bg-gray-700 dark:text-white"
-        />
-        <button
-          type="button"
-          onClick={startRecording}
-          className={`p-2 rounded-md transition-colors ${
-            isRecording
-              ? "bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400"
-              : "bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 text-violet-600 dark:text-violet-400"
-          }`}
-          title={
-            isRecording
-              ? "Recording in progress..."
-              : "Click to start voice input"
-          }
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-            />
-          </svg>
-        </button>
-        <label
-          className="cursor-pointer p-2 bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 rounded-md transition-colors"
-          title="Upload an image to share with the AI assistant"
-        >
+        {files && files.length > 0 && (
+          <div className="mb-4 px-4 py-3 bg-[#F3F4FF] rounded-lg shrink-0">
+            <div className="text-sm mb-2 text-gray-600">
+              {files.length} image{files.length > 1 ? 's' : ''} selected
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {Array.from(files).map((file, index) => (
+                <div key={index} className="relative">
+                  <div className="w-16 h-16 border border-[#818CF8] rounded-lg overflow-hidden">
+                    <img 
+                      src={URL.createObjectURL(file)} 
+                      alt={`Preview ${index}`}
+                      className="w-full h-full object-cover"
+                      onLoad={(e) => URL.revokeObjectURL((e.target as HTMLImageElement).src)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                    aria-label="Remove image"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            {!input.trim() && (
+              <div className="mt-2 text-xs text-gray-500">
+                Will send with default message: "{DEFAULT_IMAGE_MESSAGE}"
+              </div>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex gap-3 shrink-0">
           <input
             type="file"
-            accept="image/*"
             onChange={handleImageChange}
+            accept="image/*"
             className="hidden"
             ref={fileInputRef}
+            multiple
           />
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 text-violet-600 dark:text-violet-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="px-4 py-3 text-sm bg-[#F3F4FF] text-[#818CF8] rounded-lg hover:bg-[#818CF8] hover:text-white transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-        </label>
-        <button
-          type="submit"
-          disabled={isLoading || (!input.trim() && !files)}
-          className="py-2 px-4 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="Send your message to the AI assistant"
-        >
-          {isLoading ? "..." : "Send"}
-        </button>
-      </form>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <input
+            type="text"
+            value={input}
+            onChange={handleInputChange}
+            placeholder="Paste a drug name, TikTok post, or screenshot quote"
+            className="flex-1 p-4 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#818CF8]"
+          />
+          <button
+            type="submit"
+            className="px-6 py-3 bg-[#818CF8] text-white rounded-lg hover:bg-[#6366F1] transition-colors font-medium"
+          >
+            Send
+          </button>
+        </form>
+      </main>
     </div>
   );
 }
