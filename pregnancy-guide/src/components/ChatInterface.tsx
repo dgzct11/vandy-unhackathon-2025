@@ -138,7 +138,11 @@ export default function ChatInterface({
       // Prevent default form submission
       event.preventDefault();
 
-      setInput(DEFAULT_IMAGE_MESSAGE);
+      // Use handleInputChange to set the input value
+      const inputEvent = {
+        target: { value: DEFAULT_IMAGE_MESSAGE },
+      } as ChangeEvent<HTMLInputElement>;
+      handleInputChange(inputEvent);
       setShouldSubmit(true);
 
       return;
