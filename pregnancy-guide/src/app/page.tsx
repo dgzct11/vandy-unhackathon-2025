@@ -72,11 +72,7 @@ export default function Home() {
       <main className="flex-grow container mx-auto p-4 max-w-4xl flex items-center justify-center py-8">
         <ChatInterface
           chatHelpers={chatHelpers}
-          selectedImage={selectedImage}
-          setSelectedImage={setSelectedImage}
-          isFetchingFDA={false}
-          isRecording={isRecording}
-          startRecording={startRecording}
+          
         />
       </main>
 
