@@ -61,14 +61,14 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-violet-50 dark:from-gray-900 dark:to-gray-800">
-      <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
+    <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-b from-blue-50 to-violet-50 dark:from-gray-900 dark:to-gray-800">
+      <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm shrink-0">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Image 
-              src="/mama_shield_logo.png" 
-              alt="MamaShield Logo" 
-              width={40} 
+            <Image
+              src="/mama_shield_logo.png"
+              alt="MamaShield Logo"
+              width={40}
               height={40}
               className="rounded-md"
             />
@@ -82,7 +82,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="flex-grow container mx-auto p-0 sm:p-4 max-w-full sm:max-w-4xl flex items-center justify-center py-0 sm:py-8">
+      <main className="flex-1 overflow-hidden">
         <ChatInterface
           chatHelpers={chatHelpers}
           selectedImage={selectedImage}
@@ -92,7 +92,7 @@ export default function Home() {
         />
       </main>
 
-      <footer className="mt-auto border-t border-gray-200 dark:border-gray-700 py-3 sm:py-6 text-center text-sm text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+      <footer className="border-t border-gray-200 dark:border-gray-700 py-3 sm:py-4 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shrink-0">
         <div className="container mx-auto px-2 sm:px-4">
           <p>
             This tool provides general information and is not a substitute for
