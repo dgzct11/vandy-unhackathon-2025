@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
-
+import { UseChatHelpers } from "ai/react";
 import Image from "next/image";
 import ChatInterface from "@/components/ChatInterface";
 
@@ -60,9 +60,18 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-violet-50 dark:from-gray-900 dark:to-gray-800">
       <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-violet-700 dark:text-violet-400">
-            MamaShield
-          </h1>
+          <div className="flex items-center gap-2">
+            <Image 
+              src="/mama_shield_logo.png" 
+              alt="MamaShield Logo" 
+              width={40} 
+              height={40}
+              className="rounded-md"
+            />
+            <h1 className="text-2xl font-bold text-violet-700 dark:text-violet-400">
+              MamaShield
+            </h1>
+          </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Powered by AI & OpenFDA
           </p>
