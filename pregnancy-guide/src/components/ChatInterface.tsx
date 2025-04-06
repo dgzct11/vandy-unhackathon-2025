@@ -171,11 +171,11 @@ export default function ChatInterface({
     (messages[messages.length - 1].role === "user" || messages[messages.length - 1].content === "");
 
   return (
-    <div className="bg-white h-screen w-full flex flex-col overflow-hidden rounded-l">
+    <div className="bg-white h-full w-full flex flex-col overflow-hidden">
       
-      <main className="flex-1 w-full max-w-6xl mx-auto px-2 sm:px-6 py-4 flex flex-col overflow-hidden ">
+      <main className="flex-1 w-full flex flex-col overflow-hidden">
         
-        <div className="flex-1 overflow-y-auto min-h-0 mb-4 space-y-4 flex flex-col">
+        <div className="flex-1 overflow-y-auto min-h-0 px-2 sm:px-6 py-2 sm:py-4 space-y-4 flex flex-col">
           <div className="bg-violet-50 p-4 rounded-lg mb-4 shadow-sm shrink-0">
             <div className="flex items-center gap-3 mb-4">
               <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -244,7 +244,7 @@ export default function ChatInterface({
         </div>
 
         {files && files.length > 0 && (
-          <div className="mb-4 px-4 py-3 bg-[#F3F4FF] rounded-lg shrink-0">
+          <div className="px-4 py-3 bg-[#F3F4FF] border-t border-gray-100 shrink-0">
             <div className="text-sm mb-2 text-gray-600">
               {files.length} image{files.length > 1 ? 's' : ''} selected
             </div>
@@ -278,7 +278,7 @@ export default function ChatInterface({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex gap-3 shrink-0">
+        <form onSubmit={handleSubmit} className="flex gap-3 p-2 sm:p-4 border-t border-gray-200 bg-white shrink-0">
           <input
             type="file"
             onChange={handleImageChange}
