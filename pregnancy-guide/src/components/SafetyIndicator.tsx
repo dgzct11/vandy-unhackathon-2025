@@ -36,7 +36,7 @@ const SafetyIndicator: React.FC<SafetyIndicatorProps> = ({ safetyLevel }) => {
   };
 
   return (
-    <div className="flex items-center gap-3 mb-6 p-4 bg-[#F3F4FF] rounded-lg">
+    <div className="flex items-center gap-3 p-4 bg-[#F3F4FF] rounded-lg">
       <div className="flex items-center gap-3">
         <svg className="w-8 h-8" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M20 8C22 8 26 10 26 16C26 22 22 32 20 32C18 32 14 22 14 16C14 10 18 8 20 8Z" fill="#818CF8"/>

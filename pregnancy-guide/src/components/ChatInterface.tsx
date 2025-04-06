@@ -10,6 +10,8 @@ interface Message {
   content: string;
 }
 
+type SafetyLevel = 'safe' | 'moderate' | 'notToSafe' | 'notSafe';
+
 interface ChatInterfaceProps {
   chatHelpers: UseChatHelpers;
 }
@@ -31,12 +33,19 @@ const removeAlternativesSection = (content: string): string => {
   return parts[0].trim();
 };
 
+// Function to remove safety indicator tag from message
+const removeSafetyTag = (content: string): string => {
+  // Match [SAFE], [MODERATE], [NOT_TOO_SAFE], or [NOT_SAFE] at the beginning of content
+  // with optional colon and spaces after it
+  return content.replace(/^\[(SAFE|MODERATE|NOT_TOO_SAFE|NOT_SAFE)\](\s*:?\s*)/i, '').trim();
+};
+
 export default function ChatInterface({
   chatHelpers,
 }: ChatInterfaceProps) {
   const { messages, setMessages, input, handleInputChange, handleSubmit: handleChatSubmit, isLoading, setInput } = chatHelpers;
   const [files, setFiles] = useState<FileList | undefined>(undefined);
-  const [safetyLevel, setSafetyLevel] = useState<'safe' | 'moderate' | 'notToSafe' | 'notSafe' | null>(null);
+  const [messageSafetyLevels, setMessageSafetyLevels] = useState<{[key: string]: SafetyLevel}>({});
   const [alternatives, setAlternatives] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const DEFAULT_IMAGE_MESSAGE = "What is this medication and is it safe during pregnancy?";
@@ -55,8 +64,10 @@ export default function ChatInterface({
     return null;
   };
 
+ 
+
   // Function to determine safety level from AI response
-  const determineSafetyLevel = (content: string) => {
+  const determineSafetyLevel = (content: string): SafetyLevel | null => {
     const safetyMatch = content.match(/^\[(SAFE|MODERATE|NOT_TOO_SAFE|NOT_SAFE)\]/i);
     
     if (safetyMatch) {
@@ -81,11 +92,23 @@ export default function ChatInterface({
   // Update safety level and alternatives when new assistant message is received
   useEffect(() => {
     if (messages.length > 0) {
+      const newSafetyLevels = {...messageSafetyLevels};
+      
+      messages.forEach(message => {
+        if (message.role === 'assistant' && !newSafetyLevels[message.id]) {
+          const level = determineSafetyLevel(message.content);
+          if (level) {
+            newSafetyLevels[message.id] = level;
+          }
+        }
+      });
+      
+      setMessageSafetyLevels(newSafetyLevels);
+      
+      // Handle alternatives for the last message
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'assistant') {
         const level = determineSafetyLevel(lastMessage.content);
-        setSafetyLevel(level);
-        
         // Only look for alternatives if not safe
         if (level && level !== 'safe') {
           const foundAlternatives = extractAlternatives(lastMessage.content);
@@ -149,11 +172,7 @@ export default function ChatInterface({
 
   return (
     <div className="bg-white h-screen w-full flex flex-col overflow-hidden">
-      <header className="w-full px-6 py-2 flex justify-between items-center border-b shrink-0">
-        <span className="text-[#818CF8] text-lg">MamaShield</span>
-        <span className="text-gray-500 text-sm">Powered by AI & OpenFDA</span>
-      </header>
-
+      
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-4 flex flex-col overflow-hidden">
         <div className="flex items-center gap-3 mb-4 shrink-0">
           <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -169,27 +188,7 @@ export default function ChatInterface({
           Welcome to MAMA SHIELD — your AI-powered guide for safer pregnancy, built for mothers & future mothers!
         </p>
 
-        {safetyLevel && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
-          <div className="space-y-4 shrink-0">
-            <SafetyIndicator safetyLevel={safetyLevel} />
-            {alternatives && alternatives.length > 0 && (
-              <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-                <h3 className="font-medium text-green-800 mb-2">Safer Alternatives:</h3>
-                <ul className="space-y-2">
-                  {alternatives.map((alt, index) => (
-                    <li key={index} className="text-green-700 flex items-start">
-                      <svg className="h-5 w-5 mr-2 text-green-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {alt}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
+        
         <div className="flex-1 overflow-y-auto min-h-0 mb-4 space-y-4 flex flex-col">
           {messages.length === 0 && (
             <div className="p-4 rounded-lg bg-[#F3F4FF] text-gray-600 self-start max-w-[85%]">
@@ -197,34 +196,45 @@ export default function ChatInterface({
             </div>
           )}
           {messages.map((message: any, index: number) => (
-            <div
-              key={message.id}
-              className={`p-4 rounded-lg max-w-[85%] ${
-                message.role === "assistant"
-                  ? "bg-[#F3F4FF] text-gray-600 self-start"
-                  : "bg-[#818CF8] text-white self-end"
-              } ${(index === messages.length - 1 && shouldShowLoadingMessage && message.role === "assistant") ? "hidden" : ""}`}
-            >
-              {message.role === "assistant" 
-                ? formatMessage(removeAlternativesSection(message.content))
-                : formatMessage(message.content)
-              }
-              <div>
-                {message?.experimental_attachments
-                  ?.filter((attachment: any) =>
-                    attachment?.contentType?.startsWith('image/')
-                  )
-                  .map((attachment: any, index: number) => (
-                    <Image
-                      key={`${message.id}-${index}`}
-                      src={attachment.url}
-                      width={500}
-                      height={500}
-                      alt={attachment.name ?? `attachment-${index}`}
-                      className="rounded-lg mt-2"
-                    />
-                  ))}
-              </div>
+            <div key={message.id} className="flex flex-col gap-2">
+
+              {/* Safety Indicator - show above assistant messages when a safety level is detected */}
+                {message.role === "assistant" && messageSafetyLevels[message.id] && (
+                  <div className="self-start max-w-[85%] mb-0">
+                    <SafetyIndicator safetyLevel={messageSafetyLevels[message.id]} />
+                  </div>
+                )}
+                
+
+                <div
+                  className={`p-4 rounded-lg max-w-[85%] ${
+                    message.role === "assistant"
+                      ? "bg-[#F3F4FF] text-gray-600 self-start"
+                      : "bg-[#818CF8] text-white self-end"
+                  } ${(index === messages.length - 1 && shouldShowLoadingMessage && message.role === "assistant") ? "hidden" : ""}`}
+                >
+                  {message.role === "assistant" 
+                    ? formatMessage(removeSafetyTag(removeAlternativesSection(message.content)))
+                    : formatMessage(message.content)
+                  }
+                  <div>
+                    {message?.experimental_attachments
+                      ?.filter((attachment: any) =>
+                        attachment?.contentType?.startsWith('image/')
+                      )
+                      .map((attachment: any, attachmentIndex: number) => (
+                        <Image
+                          key={`${message.id}-${attachmentIndex}`}
+                          src={attachment.url}
+                          width={500}
+                          height={500}
+                          alt={attachment.name ?? `attachment-${attachmentIndex}`}
+                          className="rounded-lg mt-2"
+                        />
+                      ))}
+                  </div>
+                </div>
+              
             </div>
           ))}
           
