@@ -5,11 +5,15 @@ import { useChat } from "@ai-sdk/react";
 import { UseChatHelpers } from "ai/react";
 import Image from "next/image";
 import ChatInterface from "@/components/ChatInterface";
+import EmergencyButton from "@/components/EmergencyButton";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
+
+  // Get emergency contact from environment variable
+  const emergencyContact = process.env.NEXT_PUBLIC_EMERGENCY_CONTACT || "";
 
   // AI chat integration with simpler approach
   const chatHelpers = useChat({
@@ -61,10 +65,10 @@ export default function Home() {
       <header className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm shrink-0">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Image 
-              src="/mama_shield_logo.png" 
-              alt="MamaShield Logo" 
-              width={40} 
+            <Image
+              src="/mama_shield_logo.png"
+              alt="MamaShield Logo"
+              width={40}
               height={40}
               className="rounded-md"
             />
@@ -81,6 +85,10 @@ export default function Home() {
       <main className="flex-1 overflow-hidden">
         <ChatInterface
           chatHelpers={chatHelpers}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          isRecording={isRecording}
+          startRecording={startRecording}
         />
       </main>
 
@@ -93,6 +101,8 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      <EmergencyButton emergencyContact={emergencyContact} />
     </div>
   );
 }

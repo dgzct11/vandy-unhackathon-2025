@@ -10,10 +10,14 @@ interface Message {
   content: string;
 }
 
-type SafetyLevel = 'safe' | 'moderate' | 'notToSafe' | 'notSafe';
+type SafetyLevel = "safe" | "moderate" | "notToSafe" | "notSafe";
 
 interface ChatInterfaceProps {
   chatHelpers: UseChatHelpers;
+  selectedImage?: File | null;
+  setSelectedImage?: (image: File | null) => void;
+  isRecording?: boolean;
+  startRecording?: () => void;
 }
 
 // Loading message component
@@ -27,7 +31,7 @@ const LoadingMessage = () => (
 // Add this function at the top level, before the ChatInterface component
 const removeAlternativesSection = (content: string): string => {
   // Remove the SAFER ALTERNATIVES section and any content after it
-  const parts = content.split('SAFER ALTERNATIVES:');
+  const parts = content.split("SAFER ALTERNATIVES:");
   // Return the first part (everything before SAFER ALTERNATIVES)
   // Trim to remove any trailing whitespace or newlines
   return parts[0].trim();
@@ -37,80 +41,99 @@ const removeAlternativesSection = (content: string): string => {
 const removeSafetyTag = (content: string): string => {
   // Match [SAFE], [MODERATE], [NOT_TOO_SAFE], or [NOT_SAFE] at the beginning of content
   // with optional colon and spaces after it
-  return content.replace(/^\[(SAFE|MODERATE|NOT_TOO_SAFE|NOT_SAFE)\](\s*:?\s*)/i, '').trim();
+  return content
+    .replace(/^\[(SAFE|MODERATE|NOT_TOO_SAFE|NOT_SAFE)\](\s*:?\s*)/i, "")
+    .trim();
 };
 
 export default function ChatInterface({
   chatHelpers,
+  selectedImage,
+  setSelectedImage,
+  isRecording = false,
+  startRecording,
 }: ChatInterfaceProps) {
-  const { messages, setMessages, input, handleInputChange, handleSubmit: handleChatSubmit, isLoading, setInput } = chatHelpers;
+  const {
+    messages,
+    setMessages,
+    input,
+    handleInputChange,
+    handleSubmit: handleChatSubmit,
+    isLoading,
+    setInput,
+  } = chatHelpers;
   const [files, setFiles] = useState<FileList | undefined>(undefined);
-  const [messageSafetyLevels, setMessageSafetyLevels] = useState<{[key: string]: SafetyLevel}>({});
+  const [messageSafetyLevels, setMessageSafetyLevels] = useState<{
+    [key: string]: SafetyLevel;
+  }>({});
   const [alternatives, setAlternatives] = useState<string[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const DEFAULT_IMAGE_MESSAGE = "What is this medication and is it safe during pregnancy?";
+  const DEFAULT_IMAGE_MESSAGE =
+    "What is this medication and is it safe during pregnancy?";
 
   const [shouldSubmit, setShouldSubmit] = useState(false);
 
   // Function to extract alternatives from AI response
   const extractAlternatives = (content: string): string[] | null => {
-    const alternativesMatch = content.match(/SAFER ALTERNATIVES:\n((?:- [^\n]+\n?)+)/);
+    const alternativesMatch = content.match(
+      /SAFER ALTERNATIVES:\n((?:- [^\n]+\n?)+)/
+    );
     if (alternativesMatch && alternativesMatch[1]) {
       return alternativesMatch[1]
-        .split('\n')
-        .filter(line => line.trim().startsWith('-'))
-        .map(line => line.trim().substring(2));
+        .split("\n")
+        .filter((line) => line.trim().startsWith("-"))
+        .map((line) => line.trim().substring(2));
     }
     return null;
   };
 
- 
-
   // Function to determine safety level from AI response
   const determineSafetyLevel = (content: string): SafetyLevel | null => {
-    const safetyMatch = content.match(/^\[(SAFE|MODERATE|NOT_TOO_SAFE|NOT_SAFE)\]/i);
-    
+    const safetyMatch = content.match(
+      /^\[(SAFE|MODERATE|NOT_TOO_SAFE|NOT_SAFE)\]/i
+    );
+
     if (safetyMatch) {
       const level = safetyMatch[1].toUpperCase();
       switch (level) {
-        case 'SAFE':
-          return 'safe';
-        case 'MODERATE':
-          return 'moderate';
-        case 'NOT_TOO_SAFE':
-          return 'notToSafe';
-        case 'NOT_SAFE':
-          return 'notSafe';
+        case "SAFE":
+          return "safe";
+        case "MODERATE":
+          return "moderate";
+        case "NOT_TOO_SAFE":
+          return "notToSafe";
+        case "NOT_SAFE":
+          return "notSafe";
         default:
           return null;
       }
     }
-    
+
     return null;
   };
 
   // Update safety level and alternatives when new assistant message is received
   useEffect(() => {
     if (messages.length > 0) {
-      const newSafetyLevels = {...messageSafetyLevels};
-      
-      messages.forEach(message => {
-        if (message.role === 'assistant' && !newSafetyLevels[message.id]) {
+      const newSafetyLevels = { ...messageSafetyLevels };
+
+      messages.forEach((message) => {
+        if (message.role === "assistant" && !newSafetyLevels[message.id]) {
           const level = determineSafetyLevel(message.content);
           if (level) {
             newSafetyLevels[message.id] = level;
           }
         }
       });
-      
+
       setMessageSafetyLevels(newSafetyLevels);
-      
+
       // Handle alternatives for the last message
       const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === 'assistant') {
+      if (lastMessage.role === "assistant") {
         const level = determineSafetyLevel(lastMessage.content);
         // Only look for alternatives if not safe
-        if (level && level !== 'safe') {
+        if (level && level !== "safe") {
           const foundAlternatives = extractAlternatives(lastMessage.content);
           setAlternatives(foundAlternatives);
         } else {
@@ -122,7 +145,7 @@ export default function ChatInterface({
 
   useEffect(() => {
     if (shouldSubmit) {
-      handleChatSubmit(undefined, {experimental_attachments: files});
+      handleChatSubmit(undefined, { experimental_attachments: files });
       setShouldSubmit(false);
       setFiles(undefined);
     }
@@ -155,7 +178,7 @@ export default function ChatInterface({
       setShouldSubmit(true);
       return;
     }
-    
+
     handleChatSubmit(event, {
       experimental_attachments: files,
     });
@@ -163,24 +186,39 @@ export default function ChatInterface({
     setFiles(undefined);
 
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
-  const shouldShowLoadingMessage = isLoading && messages.length > 0 && 
-    (messages[messages.length - 1].role === "user" || messages[messages.length - 1].content === "");
+  const shouldShowLoadingMessage =
+    isLoading &&
+    messages.length > 0 &&
+    (messages[messages.length - 1].role === "user" ||
+      messages[messages.length - 1].content === "");
 
   return (
     <div className="bg-white h-full w-full flex flex-col overflow-hidden">
-      
       <main className="flex-1 w-full flex flex-col overflow-hidden">
-        
         <div className="flex-1 overflow-y-auto min-h-0 px-2 sm:px-6 py-2 sm:py-4 space-y-4 flex flex-col">
           <div className="bg-violet-50 p-4 rounded-lg mb-4 shadow-sm shrink-0">
             <div className="flex items-center gap-3 mb-4">
-              <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M24 8C26 8 32 12 32 20C32 28 26 40 24 40C22 40 16 28 16 20C16 12 22 8 24 8Z" fill="#818CF8"/>
-                <path d="M24 40V44M20 44H28" stroke="#818CF8" strokeWidth="2" strokeLinecap="round"/>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M24 8C26 8 32 12 32 20C32 28 26 40 24 40C22 40 16 28 16 20C16 12 22 8 24 8Z"
+                  fill="#818CF8"
+                />
+                <path
+                  d="M24 40V44M20 44H28"
+                  stroke="#818CF8"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
               <h2 className="text-2xl font-semibold text-[#818CF8]">
                 ASK MAMA
@@ -188,75 +226,88 @@ export default function ChatInterface({
             </div>
 
             <p className="text-gray-600">
-              Welcome to MAMA SHIELD — your AI-powered guide for safer pregnancy, built for mothers & future mothers!
+              Welcome to MAMA SHIELD — your AI-powered guide for safer
+              pregnancy, built for mothers & future mothers!
             </p>
           </div>
 
           {messages.length === 0 && (
             <div className="p-4 rounded-lg bg-[#F3F4FF] text-gray-600 self-start max-w-[85%]">
-              Hello! I can help you understand how medications might affect pregnancy and breastfeeding. Feel free to ask any questions!
+              Hello! I can help you understand how medications might affect
+              pregnancy and breastfeeding. Feel free to ask any questions!
             </div>
           )}
           {messages.map((message: any, index: number) => (
             <div key={message.id} className="flex flex-col gap-2">
-
               {/* Safety Indicator - show above assistant messages when a safety level is detected */}
-                {message.role === "assistant" && messageSafetyLevels[message.id] && (
+              {message.role === "assistant" &&
+                messageSafetyLevels[message.id] && (
                   <div className="self-start max-w-[85%] mb-0">
-                    <SafetyIndicator safetyLevel={messageSafetyLevels[message.id]} />
+                    <SafetyIndicator
+                      safetyLevel={messageSafetyLevels[message.id]}
+                    />
                   </div>
                 )}
-                
 
-                <div
-                  className={`p-4 rounded-lg max-w-[85%] ${
-                    message.role === "assistant"
-                      ? "bg-[#F3F4FF] text-gray-600 self-start"
-                      : "bg-[#818CF8] text-white self-end"
-                  } ${(index === messages.length - 1 && shouldShowLoadingMessage && message.role === "assistant") ? "hidden" : ""}`}
-                >
-                  {message.role === "assistant" 
-                    ? formatMessage(removeSafetyTag(removeAlternativesSection(message.content)))
-                    : formatMessage(message.content)
-                  }
-                  <div>
-                    {message?.experimental_attachments
-                      ?.filter((attachment: any) =>
-                        attachment?.contentType?.startsWith('image/')
+              <div
+                className={`p-4 rounded-lg max-w-[85%] ${
+                  message.role === "assistant"
+                    ? "bg-[#F3F4FF] text-gray-600 self-start"
+                    : "bg-[#818CF8] text-white self-end"
+                } ${
+                  index === messages.length - 1 &&
+                  shouldShowLoadingMessage &&
+                  message.role === "assistant"
+                    ? "hidden"
+                    : ""
+                }`}
+              >
+                {message.role === "assistant"
+                  ? formatMessage(
+                      removeSafetyTag(
+                        removeAlternativesSection(message.content)
                       )
-                      .map((attachment: any, attachmentIndex: number) => (
-                        <Image
-                          key={`${message.id}-${attachmentIndex}`}
-                          src={attachment.url}
-                          width={500}
-                          height={500}
-                          alt={attachment.name ?? `attachment-${attachmentIndex}`}
-                          className="rounded-lg mt-2"
-                        />
-                      ))}
-                  </div>
+                    )
+                  : formatMessage(message.content)}
+                <div>
+                  {message?.experimental_attachments
+                    ?.filter((attachment: any) =>
+                      attachment?.contentType?.startsWith("image/")
+                    )
+                    .map((attachment: any, attachmentIndex: number) => (
+                      <Image
+                        key={`${message.id}-${attachmentIndex}`}
+                        src={attachment.url}
+                        width={500}
+                        height={500}
+                        alt={attachment.name ?? `attachment-${attachmentIndex}`}
+                        className="rounded-lg mt-2"
+                      />
+                    ))}
                 </div>
-              
+              </div>
             </div>
           ))}
-          
+
           {shouldShowLoadingMessage && <LoadingMessage />}
         </div>
 
         {files && files.length > 0 && (
           <div className="px-4 py-3 bg-[#F3F4FF] border-t border-gray-100 shrink-0">
             <div className="text-sm mb-2 text-gray-600">
-              {files.length} image{files.length > 1 ? 's' : ''} selected
+              {files.length} image{files.length > 1 ? "s" : ""} selected
             </div>
             <div className="flex flex-wrap gap-2">
               {Array.from(files).map((file, index) => (
                 <div key={index} className="relative">
                   <div className="w-16 h-16 border border-[#818CF8] rounded-lg overflow-hidden">
-                    <img 
-                      src={URL.createObjectURL(file)} 
+                    <img
+                      src={URL.createObjectURL(file)}
                       alt={`Preview ${index}`}
                       className="w-full h-full object-cover"
-                      onLoad={(e) => URL.revokeObjectURL((e.target as HTMLImageElement).src)}
+                      onLoad={(e) =>
+                        URL.revokeObjectURL((e.target as HTMLImageElement).src)
+                      }
                     />
                   </div>
                   <button
@@ -278,7 +329,10 @@ export default function ChatInterface({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex gap-3 p-2 sm:p-4 border-t border-gray-200 bg-white shrink-0">
+        <form
+          onSubmit={handleSubmit}
+          className="flex gap-3 p-2 sm:p-4 border-t border-gray-200 bg-white shrink-0"
+        >
           <input
             type="file"
             onChange={handleImageChange}
@@ -292,10 +346,44 @@ export default function ChatInterface({
             onClick={() => fileInputRef.current?.click()}
             className="px-4 py-3 text-sm bg-[#F3F4FF] text-[#818CF8] rounded-lg hover:bg-[#818CF8] hover:text-white transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
+          {startRecording && (
+            <button
+              type="button"
+              onClick={startRecording}
+              className={`px-4 py-3 text-sm ${
+                isRecording
+                  ? "bg-red-100 text-red-500"
+                  : "bg-[#F3F4FF] text-[#818CF8]"
+              } rounded-lg hover:bg-[#818CF8] hover:text-white transition-colors`}
+              aria-label={isRecording ? "Stop recording" : "Start recording"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          )}
           <input
             type="text"
             value={input}
